@@ -1,0 +1,10 @@
+ultralytics
+opencv-python
+Pillow
+SpeechRecognition
+PyAudio
+numpy
+customtkinter
+torch
+torchvision
+torchaudio

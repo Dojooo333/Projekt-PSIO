@@ -1,0 +1,29 @@
+# Środowisko Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Środowiska wirtualne
+venv/
+env/
+.venv/
+
+# Pliki konfiguracyjne IDE
+.idea/
+.vscode/
+
+# Bazy danych (lokalna historia treningów)
+*.sqlite3
+*.db
+historia_treningow.db
+
+# Nagrania i media
+nagrania_treningow/
+*.mp4
+*.avi
+
+# Zmienne środowiskowe
+.env
+
+# Pliki pdf
+*.pdf
