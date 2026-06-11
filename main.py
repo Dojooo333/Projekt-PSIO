@@ -15,8 +15,8 @@ if __name__ == "__main__":
     model.to(config.DEVICE)
 
     print("[INFO] Inicjalizacja wątków dla Kamery 1 oraz Kamery 2...")
-    camera1 = ThreadedCamera(1)
-    camera2 = ThreadedCamera(3)
+    camera1 = ThreadedCamera(config.CAMERA_1_INDEX)
+    camera2 = ThreadedCamera(config.CAMERA_2_INDEX)
 
     print("[INFO] Uruchamianie interfejsu graficznego...")
     # Przekazanie zainicjalizowanych obiektów do aplikacji Tkinter
@@ -24,7 +24,9 @@ if __name__ == "__main__":
 
     # Zwalnia wątki i zamyka aplikację
     def on_closing():
-        print("[INFO] Zwalnianie wątków kamer...")
+        print("[INFO] Zwalnianie wątków kamer i AI...")
+        app.yolo_thread.stop()
+        app.voice_listener.stop()
         camera1.release()
         camera2.release()
         app.destroy()

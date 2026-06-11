@@ -24,31 +24,40 @@ class YoloThread:
     def _loop(self):
         frame_id = 0
         while self.running:
-            # Pobieranie najnowszych klatek z kamer
-            ret1, frame1 = self.camera1.read()
-            ret2, frame2 = self.camera2.read()
+            try:
+                # Pobieranie najnowszych klatek z kamer
+                ret1, frame1 = self.camera1.read()
+                ret2, frame2 = self.camera2.read()
 
-            # Oczekiwanie na klatki z obu kamer
-            if frame1 is None or frame2 is None:
-                time.sleep(0.01)
-                continue
+                # Oczekiwanie na klatki z obu kamer
+                if frame1 is None or frame2 is None:
+                    time.sleep(0.01)
+                    continue
 
-            # Skalowanie obrazu
-            k1 = scale_image_to_height(frame1, camera_idx=1, target_h=480)
-            k2 = scale_image_to_height(frame2, camera_idx=2, target_h=480)
+                # Skalowanie obrazu
+                k1 = scale_image_to_height(frame1, camera_idx=1, target_h=480)
+                k2 = scale_image_to_height(frame2, camera_idx=2, target_h=480)
 
-            # Przetwarzanie klatek przez model YOLO
-            results = self.model.predict([k1, k2], verbose=False, device=config.DEVICE, imgsz=640)
+                # Przetwarzanie klatek przez model YOLO
+                results = self.model.predict([k1, k2], verbose=False, device=config.DEVICE, imgsz=640)
 
-            # Nanoszenie szkieletów na klatki
-            frame_front = draw_skeleton(k1, results[0])
-            frame_side = draw_skeleton(k2, results[1])
+                # Nanoszenie szkieletów na klatki
+                frame_front = draw_skeleton(k1, results[0])
+                frame_side = draw_skeleton(k2, results[1])
 
-            frame_id += 1
+                frame_id += 1
 
-            # Zapisanie wyników dla głównego wątku (GUI)
-            with self.lock:
-                self.new_results = (frame_id, frame_front, frame_side, results)
+                # Zapisanie wyników dla głównego wątku (GUI)
+                with self.lock:
+                    self.new_results = (frame_id, frame_front, frame_side, results)
+            except Exception as e:
+                print(f"[YOLO_THREAD] Błąd: {e}")
+                time.sleep(0.1)
+
+    def stop(self):
+        self.running = False
+        if threading.current_thread() != self.thread:
+            self.thread.join(timeout=3)
 
     # Pobiera najnowszą paczkę wyników przez GUI
     def get_data(self):

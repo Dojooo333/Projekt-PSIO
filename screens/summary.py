@@ -1,13 +1,12 @@
 import tkinter as tk
 import os
-import platform
-import subprocess
 
 # Ekran podsumowania treningu
 class SummaryScreen(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent, bg="#FFFFFF")
         self.controller = controller
+        self.end_mode = False
         tk.Label(self, text="PODSUMOWANIE WYNIKÓW", font=("Helvetica", 24, "bold"), fg="#111827", bg="#FFFFFF").pack(
             pady=20)
 

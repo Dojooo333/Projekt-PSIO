@@ -39,7 +39,10 @@ class ConfigScreen(tk.Frame):
 
     # Pobiera parametry i przechodzi do treningu
     def start_training(self):
-        self.controller.total_sets = int(self.spin_sets.get())
-        self.controller.total_reps = int(self.spin_reps.get())
+        try:
+            self.controller.total_sets = int(self.spin_sets.get())
+            self.controller.total_reps = int(self.spin_reps.get())
+        except ValueError:
+            return # Nie rób nic, jeśli wpisano nieliczbowe znaki
         self.controller.current_set = 1
         self.controller.show_screen("TrainingScreen")

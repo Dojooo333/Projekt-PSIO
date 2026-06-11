@@ -6,11 +6,13 @@ class SkipAState(ExerciseState):
         super().__init__("high_knees")
         self.knee_high_ok = False
         self.back_ok = True
+        self.knee_flare = False
 
     # Zeruje flagi po skończonym powtórzeniu
     def reset_rep_flags(self):
         self.knee_high_ok = False
         self.back_ok = True
+        self.knee_flare = False
 
 # Analizuje powtórzenie w Skipie A (uniesienie kolana)
 def analyze_skip_a(kp_front, conf_front, kp_side, conf_side, state: SkipAState):
@@ -53,9 +55,9 @@ def analyze_skip_a(kp_front, conf_front, kp_side, conf_side, state: SkipAState):
     high_threshold = torso_height * 0.25
     is_high = k_side_y < h_y_side + high_threshold
 
-    # Pochylenie pleców
+    # Pochylenie pleców (złagodzony próg do 0.35)
     slouch_ratio = abs(s_x - h_x_side) / torso_height
-    frame_back_correct = slouch_ratio < 0.20
+    frame_back_correct = slouch_ratio < 0.35
 
     rep_completed = False
     rep_correct = False
@@ -84,9 +86,23 @@ def analyze_skip_a(kp_front, conf_front, kp_side, conf_side, state: SkipAState):
             state.last_leg = current_leg
             state.knee_high_ok = False
             state.back_ok = frame_back_correct
+            state.knee_flare = False
     elif state.stage == "up":
         if not frame_back_correct:
             state.back_ok = False
+            
+        # Analiza uciekających kolan z kamery frontowej
+        if hasattr(state, 'last_leg'):
+            if state.last_leg == "left":
+                k_x = kp_front[YoloPoint.L_KNE][0]
+                h_x = kp_front[YoloPoint.L_HIP][0]
+            else:
+                k_x = kp_front[YoloPoint.R_KNE][0]
+                h_x = kp_front[YoloPoint.R_HIP][0]
+                
+            if abs(k_x - h_x) > shoulder_width * 0.5:
+                state.knee_flare = True
+
         if is_high:
             state.knee_high_ok = True
             
@@ -105,7 +121,7 @@ def analyze_skip_a(kp_front, conf_front, kp_side, conf_side, state: SkipAState):
             rep_completed = True
             
             wrong_leg = getattr(state, 'wrong_leg', False)
-            rep_correct = state.knee_high_ok and state.back_ok and not wrong_leg
+            rep_correct = state.knee_high_ok and state.back_ok and not wrong_leg and not state.knee_flare
             
             if rep_correct:
                 message = "OK (Dobre tempo i wysokość)"
@@ -114,6 +130,7 @@ def analyze_skip_a(kp_front, conf_front, kp_side, conf_side, state: SkipAState):
                 if wrong_leg: errors.append("Zmieniaj nogi")
                 if not state.knee_high_ok: errors.append("Kolana za nisko")
                 if not state.back_ok: errors.append("Zgarbione plecy")
+                if state.knee_flare: errors.append("Kolana uciekają na zewnątrz")
                 message = "BŁĄD: " + ", ".join(errors)
             state.reset_rep_flags()
 

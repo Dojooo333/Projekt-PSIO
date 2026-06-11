@@ -10,6 +10,12 @@ import database
 from exercises import ExerciseState, JumpingJacksState, analyze_jumping_jacks, LungesState, analyze_lunges, SkipAState, analyze_skip_a
 from video_utils import VideoRecorder
 
+EXERCISE_ANALYZERS = {
+    "jumping_jacks": analyze_jumping_jacks,
+    "lunges": analyze_lunges,
+    "high_knees": analyze_skip_a,
+}
+
 # Główny ekran treningu (obraz z kamer, liczniki, AI)
 class TrainingScreen(tk.Frame):
     def __init__(self, parent, controller):
@@ -20,6 +26,8 @@ class TrainingScreen(tk.Frame):
         self.is_counting_down = False
         self.video_writer = None
         self.video_path = None
+        self.last_audio_msg = ""
+        self.last_audio_msg_time = 0
 
         # Zmienne do synchronizacji czasu wideo
         self.target_fps = 20.0
@@ -186,7 +194,7 @@ class TrainingScreen(tk.Frame):
         if not self.is_paused and not self.is_counting_down:
             self.accumulated_time += delta_time
 
-            if self.target_exercise == "jumping_jacks":
+            if self.target_exercise in EXERCISE_ANALYZERS:
                 if (results[0].keypoints is not None and len(results[0].keypoints.xy) > 0) and \
                         (results[1].keypoints is not None and len(results[1].keypoints.xy) > 0):
 
@@ -196,8 +204,9 @@ class TrainingScreen(tk.Frame):
                     conf_s = results[1].keypoints.conf[0].cpu().numpy()
 
                     # Aktualizacja stanu ćwiczenia
+                    analyze_fn = EXERCISE_ANALYZERS[self.target_exercise]
                     self.exercise_state, rep_completed, rep_correct, _, message = \
-                        analyze_jumping_jacks(kp_f, conf_f, kp_s, conf_s, self.exercise_state)
+                        analyze_fn(kp_f, conf_f, kp_s, conf_s, self.exercise_state)
 
                     # Wywołanie komunikatów głosowych.
                     if message != "":
@@ -205,101 +214,6 @@ class TrainingScreen(tk.Frame):
 
                         if is_error:
                             text_color = "#ff3333"
-                            if not hasattr(self, 'last_audio_msg'): self.last_audio_msg = ""
-                            if not hasattr(self, 'last_audio_msg_time'): self.last_audio_msg_time = 0
-                            
-                            is_new_error = (message != self.last_audio_msg)
-                            time_passed = (time.time() - self.last_audio_msg_time > 5.0)
-
-                            if rep_completed or is_new_error or time_passed:
-                                audio_msg = message.replace("BŁĄD: ", "")
-                                self.controller.audio.speak(audio_msg)
-                                self.last_audio_msg = message
-                                self.last_audio_msg_time = time.time()
-                        else:
-                            text_color = "#00ff66"
-
-                        self.msg_lbl.config(text=message, fg=text_color)
-                    else:
-                        if self.msg_lbl.cget("text") == "BŁĄD: Sylwetka niewidoczna w obu kamerach":
-                            self.msg_lbl.config(text="ĆWICZ...", fg="#00ff66")
-
-                    if rep_completed:
-                        if rep_correct:
-                            self.correct_reps += 1
-                        else:
-                            self.incorrect_reps += 1
-
-                        self.counter_lbl.config(
-                            text=f"POPRAWNE: {self.correct_reps} / {self.controller.total_reps} (Błędne: {self.incorrect_reps})")
-
-                else:
-                    self.msg_lbl.config(text="BŁĄD: Sylwetka niewidoczna w obu kamerach", fg="#ff3333")
-            elif self.target_exercise == "lunges":
-                if (results[0].keypoints is not None and len(results[0].keypoints.xy) > 0) and \
-                        (results[1].keypoints is not None and len(results[1].keypoints.xy) > 0):
-
-                    kp_f = results[0].keypoints.xy[0].cpu().numpy()
-                    conf_f = results[0].keypoints.conf[0].cpu().numpy()
-                    kp_s = results[1].keypoints.xy[0].cpu().numpy()
-                    conf_s = results[1].keypoints.conf[0].cpu().numpy()
-
-                    self.exercise_state, rep_completed, rep_correct, _, message = \
-                        analyze_lunges(kp_f, conf_f, kp_s, conf_s, self.exercise_state)
-
-                    if message != "":
-                        is_error = message.startswith("BŁĄD:")
-
-                        if is_error:
-                            text_color = "#ff3333"
-                            if not hasattr(self, 'last_audio_msg'): self.last_audio_msg = ""
-                            if not hasattr(self, 'last_audio_msg_time'): self.last_audio_msg_time = 0
-                            
-                            is_new_error = (message != self.last_audio_msg)
-                            time_passed = (time.time() - self.last_audio_msg_time > 5.0)
-
-                            if rep_completed or is_new_error or time_passed:
-                                audio_msg = message.replace("BŁĄD: ", "")
-                                self.controller.audio.speak(audio_msg)
-                                self.last_audio_msg = message
-                                self.last_audio_msg_time = time.time()
-                        else:
-                            text_color = "#00ff66"
-
-                        self.msg_lbl.config(text=message, fg=text_color)
-                    else:
-                        if self.msg_lbl.cget("text") == "BŁĄD: Sylwetka niewidoczna w obu kamerach":
-                            self.msg_lbl.config(text="ĆWICZ...", fg="#00ff66")
-
-                    if rep_completed:
-                        if rep_correct:
-                            self.correct_reps += 1
-                        else:
-                            self.incorrect_reps += 1
-
-                        self.counter_lbl.config(text=f"POPRAWNE: {self.correct_reps} / {self.controller.total_reps} (Błędne: {self.incorrect_reps})")
-
-                else:
-                    self.msg_lbl.config(text="BŁĄD: Sylwetka niewidoczna w obu kamerach", fg="#ff3333")
-            elif self.target_exercise == "high_knees":
-                if (results[0].keypoints is not None and len(results[0].keypoints.xy) > 0) and \
-                        (results[1].keypoints is not None and len(results[1].keypoints.xy) > 0):
-
-                    kp_f = results[0].keypoints.xy[0].cpu().numpy()
-                    conf_f = results[0].keypoints.conf[0].cpu().numpy()
-                    kp_s = results[1].keypoints.xy[0].cpu().numpy()
-                    conf_s = results[1].keypoints.conf[0].cpu().numpy()
-
-                    self.exercise_state, rep_completed, rep_correct, _, message = \
-                        analyze_skip_a(kp_f, conf_f, kp_s, conf_s, self.exercise_state)
-
-                    if message != "":
-                        is_error = message.startswith("BŁĄD:")
-
-                        if is_error:
-                            text_color = "#ff3333"
-                            if not hasattr(self, 'last_audio_msg'): self.last_audio_msg = ""
-                            if not hasattr(self, 'last_audio_msg_time'): self.last_audio_msg_time = 0
                             
                             is_new_error = (message != self.last_audio_msg)
                             time_passed = (time.time() - self.last_audio_msg_time > 5.0)

@@ -4,7 +4,6 @@ Pillow
 SpeechRecognition
 PyAudio
 numpy
-customtkinter
 torch
 torchvision
 torchaudio

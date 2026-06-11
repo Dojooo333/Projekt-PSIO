@@ -31,12 +31,22 @@ class AudioEngine:
             if text is None:
                 break
             try:
-                # Bezpieczne usunięcie apostrofów i cudzysłowów z tekstu
-                safe_text = text.replace("'", "").replace('"', '')
+                ps_script = '''
+                Add-Type -AssemblyName System.Speech
+                $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer
+                $synth.Rate = 2
+                $synth.Speak($env:TTS_TEXT)
+                '''
                 
-                # Uruchomienie syntezatora systemowego PowerShell (w tle, bez okna)
-                command = f'powershell -Command "Add-Type -AssemblyName System.Speech; $synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; $synth.Rate = 2; $synth.Speak(\'{safe_text}\')"'
-                subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW)
+                import os
+                env = os.environ.copy()
+                env['TTS_TEXT'] = text
+                
+                subprocess.run(
+                    ['powershell', '-Command', ps_script],
+                    env=env,
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
             except Exception as e:
                 print(f"[AUDIO] Błąd lektora: {e}")
 
@@ -62,6 +72,10 @@ class VoiceListener:
             print("[VOICE] Gotowy do nasłuchiwania komend!")
 
             while self.running:
+                # Tylko nasłuchujemy, jeśli jesteśmy w treningu
+                if not hasattr(self.controller, 'is_training_active') or not self.controller.is_training_active:
+                    time.sleep(0.5)
+                    continue
                 try:
                     # Nasłuchiwanie mowy
                     audio = self.recognizer.listen(source, timeout=2, phrase_time_limit=4)
@@ -73,6 +87,9 @@ class VoiceListener:
                     continue
                 except Exception as e:
                     print(f"[VOICE ERROR] Nieoczekiwany błąd nasłuchu: {e}")
+
+    def stop(self):
+        self.running = False
 
     # Pobiera transkrypcję audio
     def _recognize_audio(self, audio):

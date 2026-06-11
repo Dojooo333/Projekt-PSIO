@@ -1,7 +1,5 @@
 import tkinter as tk
 import os
-import platform
-import subprocess
 import database
 
 # Ekran przeglądania historii treningów z bazy danych
