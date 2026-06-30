@@ -43,20 +43,3 @@ python main.py
 *(Z poziomu interfejsu możesz następnie wybrać odpowiednie kamery, przypisać do nich rolę front/profil oraz rozpocząć trening).*
 
 ---
-
-## 📂 Struktura zawartości projektu
-
-- **`main.py`** – Główny plik uruchamiający okno aplikacji.
-- **`ui.py`** – Klasa zarządzająca frameworkiem CustomTkinter, wyglądem okien oraz przełączaniem widoków.
-- **`screens/`** – Katalog zawierający oddzielne moduły interfejsu:
-  - `conf.py` - Ekran kalibracji i wyboru kamer.
-  - `training.py` - Główny ekran podglądu z kamer i wyników na żywo.
-- **`camera.py`** – Moduł obsługujący techniczne łączenie się i pobieranie klatek wideo z fizycznych urządzeń.
-- **`vision_utils.py` / `ai_service.py`** – Moduły przetwarzające surowy obraz przez model sieci neuronowej w celu wykrycia "szkieletu" użytkownika.
-- **`exercises/`** – Moduły z matematyczną logiką dla konkretnych ćwiczeń:
-  - `base.py` - Bazowa maszyna stanów.
-  - `skip_a.py` - Analiza wysokości kolan, naprzemienności nóg i pochylenia pleców.
-  - `jumping_jacks.py` - Analiza pajacyków.
-- **`audio_service.py`** – Moduł odpowiedzialny za generowanie mowy (syntezator Windows PowerShell) bez opóźniania klatek wideo.
-- **`database.py`** – Zarządzanie lokalną bazą SQLite, przechowującą daty, wyniki i liczbę popełnionych błędów z Twoich treningów.
-- **`config.py`** – Plik zawierający globalne ustawienia (np. domyślne indeksy kamer).
